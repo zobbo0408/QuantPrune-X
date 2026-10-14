@@ -12,6 +12,7 @@ Code license: MIT, Copyright (c) 2021 Secure AI Systems Lab.
 | utils/quantizer.py, utils/trackers.py | src/quantization/quantizer.py, trackers.py | independent formula implementations; per-layer only; device alignment; non-mutating operations |
 | utils/networks.py (checkpoint loading) | src/checkpoints.py | CPU-first, weights-only loading; SHA-256 validation; filter quantizer components only; strict loading |
 | utils/datasets.py | src/data/cifar10.py | test-only paired clean/triggered processing |
+| utils/learner.py (backdoor validation) | src/evaluation/metrics.py | add ASR-non-target and counts; return metric dict; handle empty inputs; use inference mode |
 
 The upstream quantizer cites [QuanTorch](https://github.com/skmhrk1209/QuanTorch).
 Its repository lists no license file, so quantization and tracking use
