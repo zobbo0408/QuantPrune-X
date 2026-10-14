@@ -1,0 +1,19 @@
+{
+  "source_url": "https://drive.google.com/file/d/1RwJfqAAnz9fUjsnXxsyNqAwHE5PZLhkX/view",
+  "zip_path": "models/cifar10/backdoor_w_lossfn/AlexNet_norm_128_200_Adam-Multi/backdoor_square_0_84_0.5_0.5_wpls_apla-optimize_50_Adam_0.0001.pth",
+  "local_path": "artifacts/checkpoints/alexnet/qcb.pth",
+  "sha256": "99a25611c3a88b98d4b00a85d2ecd1725738af6953da83151bcecb16b8accc13",
+  "model": "alexnet",
+  "dataset": "cifar10",
+  "trigger": {
+    "shape": "square",
+    "slice": [
+      27,
+      31
+    ],
+    "value": "image maximum before normalization"
+  },
+  "target_class": 0,
+  "license": "not separately specified",
+  "validation": "sha256-and-strict-state-dict"
+}

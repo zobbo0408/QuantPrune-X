@@ -1,0 +1,19 @@
+{
+  "source_url": "https://drive.google.com/file/d/1RwJfqAAnz9fUjsnXxsyNqAwHE5PZLhkX/view",
+  "zip_path": "models/cifar10/backdoor_w_lossfn/ResNet18_norm_128_200_Adam-Multi/backdoor_square_0_84_0.5_0.5_wpls_apla-optimize_50_Adam_0.0001.pth",
+  "local_path": "artifacts/checkpoints/resnet18/qcb.pth",
+  "sha256": "f8fa6def8bf675b091cd2830b175ccfd110ee8f1fc9eec36697bbf72fe385239",
+  "model": "resnet18",
+  "dataset": "cifar10",
+  "trigger": {
+    "shape": "square",
+    "slice": [
+      27,
+      31
+    ],
+    "value": "image maximum before normalization"
+  },
+  "target_class": 0,
+  "license": "not separately specified",
+  "validation": "sha256-and-strict-state-dict"
+}

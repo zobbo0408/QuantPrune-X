@@ -10,6 +10,7 @@ Code license: MIT, Copyright (c) 2021 Secure AI Systems Lab.
 | networks/alexnet.py | src/models/alexnet.py | CIFAR-10 only; omit PTQ class; imports |
 | utils/qutils.py | src/quantization/layers.py | independent evaluation wrappers; separate weight/activation controls; omit training helpers |
 | utils/quantizer.py, utils/trackers.py | src/quantization/quantizer.py, trackers.py | independent formula implementations; per-layer only; device alignment; non-mutating operations |
+| utils/networks.py (checkpoint loading) | src/checkpoints.py | CPU-first, weights-only loading; SHA-256 validation; filter quantizer components only; strict loading |
 | utils/datasets.py | src/data/cifar10.py | test-only paired clean/triggered processing |
 
 The upstream quantizer cites [QuanTorch](https://github.com/skmhrk1209/QuanTorch).
