@@ -1,0 +1,21 @@
+# Provenance
+
+Upstream: https://github.com/Trustworthy-and-Responsible-AI-Lab/Qu-ANTI-zation
+Pinned commit: `fb873a5e276db58ff040fa4eabbb18906fcca1b1`.
+Code license: MIT, Copyright (c) 2021 Secure AI Systems Lab.
+
+| Original | Independent baseline | Changes |
+| --- | --- | --- |
+| networks/resnet.py | src/models/resnet.py | CIFAR-10 ResNet18 only; imports |
+| networks/alexnet.py | src/models/alexnet.py | CIFAR-10 only; omit PTQ class; imports |
+| utils/qutils.py | src/quantization/layers.py | evaluation-only independent wrappers |
+| utils/quantizer.py, utils/trackers.py | src/quantization/quantizer.py, trackers.py | independent arithmetic; per-layer only; device alignment |
+| utils/datasets.py | src/data/cifar10.py | test-only paired clean/triggered processing |
+
+The upstream quantizer cites [QuanTorch](https://github.com/skmhrk1209/QuanTorch).
+Its repository lists no license file, so quantization and tracking will use
+independent formula implementations. Formula reference:
+https://arxiv.org/abs/1712.05877, with the pinned QCB reference's scale conventions.
+
+Weights: https://drive.google.com/file/d/1RwJfqAAnz9fUjsnXxsyNqAwHE5PZLhkX/view
+Weight licensing is not specified separately by the distribution source.
