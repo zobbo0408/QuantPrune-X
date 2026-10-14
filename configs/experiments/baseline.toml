@@ -1,0 +1,18 @@
+# Paths in this file are relative to the project root.
+models = ["resnet18", "alexnet"]
+output = "artifacts/runs/baseline-matrix"
+
+[evaluation]
+data_dir = "datasets/cifar10"
+device = "auto"
+precisions = ["fp32", "int8", "int4"]
+batch_size = 128
+workers = 0
+seed = 1
+target_class = 0
+normalize = true
+download_data = false
+
+[checkpoints]
+resnet18 = "artifacts/checkpoints/resnet18/qcb.pth"
+alexnet = "artifacts/checkpoints/alexnet/qcb.pth"
