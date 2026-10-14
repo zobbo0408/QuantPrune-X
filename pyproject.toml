@@ -1,0 +1,20 @@
+[project]
+name = "QuantPrune-X"
+version = "0.1.0"
+requires-python = "==3.12.*"
+dependencies = ["torch==2.6.0", "torchvision==0.21.0", "numpy==2.2.6", "pillow==11.2.1", "tqdm==4.67.1"]
+
+[tool.uv]
+package = false
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+
+[tool.uv.sources]
+# With uv 0.13.0, index resolution used ARM64 metadata and omitted CUDA dependencies.
+# Use the x86_64 wheel explicitly to preserve its dependency metadata.
+torch = { url = "https://download.pytorch.org/whl/cu126/torch-2.6.0%2Bcu126-cp312-cp312-manylinux_2_28_x86_64.whl" }
+torchvision = { index = "pytorch-cu126" }
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
