@@ -1,0 +1,9 @@
+# Fast CPU/GPU wiring check; keep this separate from reproducible full evaluations.
+[experiment]
+name = "smoke-test"
+seed = 0
+max_batches = 2
+
+[evaluation]
+models = ["resnet18", "alexnet"]
+bit_widths = [8]

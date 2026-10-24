@@ -1,0 +1,10 @@
+# Declares the agreed comparison matrix; pipeline owner supplies execution details.
+[experiment]
+name = "full-matrix"
+seed = 0
+
+[matrix]
+models = ["resnet18", "alexnet"]
+orders = ["FP32", "Q", "P", "Q→P", "P→Q"]
+bit_widths = [4, 8]
+pruning_methods = ["global_magnitude", "layerwise_magnitude"]

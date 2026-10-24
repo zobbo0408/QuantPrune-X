@@ -1,0 +1,6 @@
+[quantization]
+representation = "qdq"
+bit_widths = [4, 8]
+weight_mode = "per_tensor_symmetric"
+activation_mode = "per_tensor_asymmetric"
+preserve_pruned_zeros = true

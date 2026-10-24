@@ -14,7 +14,7 @@ uv run --locked python src/prepare_checkpoints.py --model all
 
 uv run --locked python src/evaluate.py \
   --model resnet18 \
-  --checkpoint artifacts/checkpoints/resnet18/qcb.pth \
+  --checkpoint artifacts/checkpoints/fp32/resnet18/qcb.pth \
   --data-dir datasets/cifar10 \
   --device auto \
   --output artifacts/runs/resnet18-baseline \
