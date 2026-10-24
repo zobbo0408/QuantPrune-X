@@ -14,5 +14,5 @@ normalize = true
 download_data = false
 
 [checkpoints]
-resnet18 = "artifacts/checkpoints/resnet18/qcb.pth"
-alexnet = "artifacts/checkpoints/alexnet/qcb.pth"
+resnet18 = "artifacts/checkpoints/fp32/resnet18/qcb.pth"
+alexnet = "artifacts/checkpoints/fp32/alexnet/qcb.pth"

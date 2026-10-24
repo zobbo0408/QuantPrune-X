@@ -42,8 +42,8 @@ uv run --locked python src/prepare_checkpoints.py --model resnet18 --checkpoint 
 
 | 모델 | 저장 경로 | Manifest |
 | --- | --- | --- |
-| ResNet-18 | `artifacts/checkpoints/resnet18/qcb.pth` | [resnet18.json](../configs/checkpoints/resnet18.json) |
-| AlexNet | `artifacts/checkpoints/alexnet/qcb.pth` | [alexnet.json](../configs/checkpoints/alexnet.json) |
+| ResNet-18 | `artifacts/checkpoints/fp32/resnet18/qcb.pth` | [resnet18.json](../configs/checkpoints/resnet18.json) |
+| AlexNet | `artifacts/checkpoints/fp32/alexnet/qcb.pth` | [alexnet.json](../configs/checkpoints/alexnet.json) |
 
 Manifest에는 ZIP 내부 경로, 출처, 해시, 트리거와 가중치 라이선스 상태가 기록되어 있다.
 코드의 MIT 라이선스와 가중치 라이선스는 구분한다. 배포 출처는 가중치 라이선스를 별도로 명시하지 않는다.
@@ -55,7 +55,7 @@ Manifest에는 ZIP 내부 경로, 출처, 해시, 트리거와 가중치 라이�
 ```bash
 uv run --locked python src/evaluate.py \
   --model resnet18 \
-  --checkpoint artifacts/checkpoints/resnet18/qcb.pth \
+  --checkpoint artifacts/checkpoints/fp32/resnet18/qcb.pth \
   --data-dir datasets/cifar10 --device auto \
   --output artifacts/runs/resnet18-baseline --download-data
 ```
