@@ -25,6 +25,10 @@
 
 `prune_model(model, method, ratio, exclude_layers=None, inplace=False)`는 `(model, masks, metadata)`를 반환합니다. 대상은 `Conv2d`·`Linear`의 weight뿐이며, mask는 parameter name을 key로 하는 bool tensor입니다. True는 유지, False는 제거입니다.
 
+## 양자화
+
+`quantize(model, bits, mask=None, inplace=False)`는 `(model, metadata)`를 반환합니다. 대상은 FP32 모델의 `Conv2d`·`Linear` weight이며, `bits`는 정수 4 또는 8입니다. 기본값은 모델 복사본 반환이며, `inplace=True`는 입력 모델을 변경합니다.
+
 ## 결과 행
 
 필수 열은 `src/experiments/result_schema.py`의 `REQUIRED_RESULT_FIELDS`가 기준입니다. 변환 순서는 `FP32`, `Q`, `P`, `Q→P`, `P→Q`만 허용합니다. ASR은 `asr_all`과 `asr_non_target`을 모두 기록합니다.

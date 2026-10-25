@@ -9,6 +9,7 @@ class Quantizer(nn.Module):
         super().__init__()
         if bits not in (4, 8):
             raise ValueError('Quantization requires 4 or 8 bits')
+        self.bits = bits
         self.symmetric = symmetric
         self.range_tracker = RangeTracker(ndim)
         self.register_buffer('min_val', torch.tensor(-(1 << (bits - 1)) if symmetric else 0))

@@ -1,5 +1,7 @@
 """Tests for materialized Q-DQ weights, activations, and pruning masks."""
 import copy
+from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -8,6 +10,7 @@ from torch import nn
 
 from pruning.masks import apply_masks
 from pruning.sparsity import model_sparsity
+from quantization.checkpoint_export import load_quantized_checkpoint, save_quantized_checkpoint
 from quantization.layers import QuantizedConv2d, QuantizedLayer, QuantizedLinear, configure_model
 from quantization.materialize_qdq import quantize
 from quantization.quantizer import Quantizer
@@ -76,27 +79,25 @@ class MaterializationContractTest(unittest.TestCase):
         result, _ = quantize(model, 8, inplace=True)
         self.assertIs(result, model)
 
-    def test_plain_root_and_nested_layers_are_converted_with_settings_and_names(self):
-        for model in (nn.Linear(4, 3), nn.Conv2d(2, 4, 3, stride=2, padding=2, dilation=2, groups=2),
-                      nn.Conv2d(2, 4, 3, padding=1, groups=2, padding_mode="reflect"),
-                      toy_model(plain=True)):
-            with self.subTest(type=type(model).__name__):
-                names = list(dict(model.named_parameters()))
-                result, _ = quantize(model.eval(), 4)
-                self.assertEqual(list(dict(result.named_parameters())), names)
-                originals = dict(model.named_modules())
-                for name, layer in result.named_modules():
-                    if isinstance(layer, nn.Conv2d):
-                        self.assertIsInstance(layer, QuantizedConv2d)
-                        for attribute in ("stride", "padding", "dilation", "groups", "padding_mode"):
-                            self.assertEqual(getattr(layer, attribute), getattr(originals[name], attribute))
-                    elif isinstance(layer, nn.Linear):
-                        self.assertIsInstance(layer, QuantizedLinear)
-                        self.assertEqual(layer.in_features, originals[name].in_features)
-                        self.assertEqual(layer.out_features, originals[name].out_features)
+    def test_unsupported_layers_are_rejected_before_any_mutation(self):
+        class ScaledLinear(nn.Linear):
+            def forward(self, inputs):
+                return super().forward(inputs) * 2
 
-    def test_plain_conv_padding_behavior_is_preserved_during_conversion(self):
-        source = nn.Conv2d(2, 4, 3, padding=1, groups=2, padding_mode="reflect").eval()
+        for model in (nn.Linear(4, 3), nn.Conv2d(2, 4, 3, stride=2, padding=2, dilation=2, groups=2),
+                      toy_model(plain=True), ScaledLinear(4, 3),
+                      nn.Sequential(QuantizedLinear(4, 4), ScaledLinear(4, 3))):
+            for inplace in (False, True):
+                with self.subTest(type=type(model).__name__, inplace=inplace):
+                    before = copy.deepcopy(model.state_dict())
+                    types = {name: type(layer) for name, layer in model.named_modules()}
+                    with self.assertRaisesRegex(TypeError, "unsupported layer.*QuantizedConv2d/QuantizedLinear"):
+                        quantize(model, 4, inplace=inplace)
+                    assert_state_equal(self, before, model.state_dict())
+                    self.assertEqual(types, {name: type(layer) for name, layer in model.named_modules()})
+
+    def test_quantized_conv_padding_behavior_is_preserved(self):
+        source = QuantizedConv2d(2, 4, 3, padding=1, groups=2, padding_mode="reflect").eval()
         inputs = next(iter(make_test_set_loader()))[0]
         result, _ = quantize(source, 4)
         activations = Quantizer(4, 4, False)(inputs)
@@ -104,19 +105,28 @@ class MaterializationContractTest(unittest.TestCase):
         expected = source._conv_forward(activations, weights, source.bias)
         torch.testing.assert_close(result(inputs), expected, rtol=1e-5, atol=1e-6)
 
-    def test_layer_metadata_uses_baseline_inverse_scale_convention(self):
-        model = toy_model()
+    def test_checkpoint_keeps_settings_in_metadata_and_numerical_buffers_in_state(self):
+        model = configure_model(toy_model(), 4)
+        model(next(iter(make_test_set_loader()))[0])
         result, metadata = quantize(model, 4)
-        self.assertIn("layers", metadata)
-        self.assertEqual(set(metadata["layers"]), {"conv", "fc"})
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "qdq.pt"
+            save_quantized_checkpoint(path, result, metadata)
+            checkpoint = load_quantized_checkpoint(path)
+        layers = checkpoint["quantization"]["layers"]
+        state = checkpoint["state_dict"]
+        self.assertEqual(set(layers), {"conv", "fc"})
         for name in ("conv", "fc"):
             original = model.get_submodule(name)
             baseline = Quantizer(4, original.weight.ndim, True)
             expected = baseline(original.weight)
-            weight = metadata["layers"][name]["weight"]
-            self.assertEqual(weight["bit_width"], 4)
-            torch.testing.assert_close(torch.as_tensor(weight["scale"]), baseline.scale, rtol=0, atol=0)
-            torch.testing.assert_close(torch.as_tensor(weight["zero_point"]), baseline.zero_point, rtol=0, atol=0)
+            for kind in ("weight", "activation"):
+                self.assertEqual(set(layers[name][kind]), {"enabled", "bit_width", "symmetric", "range_update"})
+                self.assertEqual(layers[name][kind]["bit_width"], 4)
+                for suffix in ("min_val", "max_val", "range_tracker.min_val", "range_tracker.max_val", "scale", "zero_point"):
+                    self.assertIn(f"{name}.{kind}_quantizer.{suffix}", state)
+            torch.testing.assert_close(state[f"{name}.weight_quantizer.scale"], baseline.scale, rtol=0, atol=0)
+            torch.testing.assert_close(state[f"{name}.weight_quantizer.zero_point"], baseline.zero_point, rtol=0, atol=0)
             torch.testing.assert_close(result.get_submodule(name).weight, expected, rtol=0, atol=0)
 
     def test_materialized_weight_is_not_quantized_again_and_activation_updates_each_forward(self):

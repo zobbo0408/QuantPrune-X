@@ -148,7 +148,7 @@ QuantPrune-X/
 - `pruning/masks.py`: mask를 CPU bool tensor로 정규화하고 versioned artifact로 저장·복원한다. 적용 시 이름과 shape를 검사하고 제거 위치를 정확한 0으로 만든다.
 - `pruning/sparsity.py`: model parameter의 total/nonzero/actual sparsity와 파라미터별 상세값을 계산한다. buffer는 제외한다.
 - `quantization/contracts.py`: 허용 bit 폭을 4/8로 제한하고 양자화 공통 반환 구조를 정의한다.
-- `quantization/materialize_qdq.py`: 2차원 이상 weight에 per-tensor symmetric Q-DQ를 적용한다. P→Q에서는 전달된 mask를 전후로 적용해 제거 weight가 반올림 때문에 살아나지 않게 한다. 현재 activation materialization은 포함하지 않는다.
+- `quantization/materialize_qdq.py`: Conv2d/Linear weight에 per-tensor symmetric 양자화를 적용하고 weight 재양자화를 끈다. P→Q에서는 전달된 mask를 전후로 적용해 제거 weight가 양자화 때문에 살아나지 않게 한다. 현재 activation materialization은 포함하지 않는다.
 - `quantization/checkpoint_export.py`: Python model 객체 대신 `state_dict`, 포맷 버전, quantization metadata를 저장한다.
 - `experiments/transforms.py`: 처리 순서의 저장값을 정확히 `FP32`, `Q`, `P`, `Q→P`, `P→Q`로 고정한다.
 - `experiments/result_schema.py`: run/model/checkpoint/양자화/프루닝/CA/ASR/효율/산출물 경로 필드를 강제하고 범위를 검사한다.

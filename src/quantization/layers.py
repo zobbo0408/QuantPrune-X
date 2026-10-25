@@ -28,13 +28,23 @@ class QuantizedLayer:
 class QuantizedConv2d(QuantizedLayer, nn.Conv2d):
     def forward(self, x):
         x, w = self.operands(x)
-        return F.conv2d(x, w, self.bias, self.stride, self.padding, self.dilation, self.groups)
+        return self._conv_forward(x, w, self.bias)
 
 
 class QuantizedLinear(QuantizedLayer, nn.Linear):
     def forward(self, x):
         x, w = self.operands(x)
         return F.linear(x, w, self.bias)
+
+
+def validate_quantized_layers(model: nn.Module) -> None:
+    """Reject unsupported Conv2d/Linear layers before changing model state."""
+    for name, layer in model.named_modules():
+        if isinstance(layer, (nn.Conv2d, nn.Linear)) and not isinstance(layer, QuantizedLayer):
+            raise TypeError(
+                f"unsupported layer {name or '<root>'}: {type(layer).__name__}; "
+                "use QuantizedConv2d/QuantizedLinear in the model definition"
+            )
 
 
 def configure_model(model, bits, *, weight=True, activation=True):
