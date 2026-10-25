@@ -1,10 +1,29 @@
-# Declares the agreed comparison matrix; pipeline owner supplies execution details.
+# Declares the agreed comparison matrix: 43 runs per model and seed.
 [experiment]
 name = "full-matrix"
-seed = 0
+seed = 0  # TODO(team): Notion proposal says default seed 225; confirm before full runs.
+output = "artifacts/runs/full-matrix"
 
 [matrix]
 models = ["resnet18", "alexnet"]
 orders = ["FP32", "Q", "P", "Q→P", "P→Q"]
 bit_widths = [4, 8]
 pruning_methods = ["global_magnitude", "layerwise_magnitude"]
+ratios = [0.3, 0.5, 0.7, 0.9]
+
+[evaluation]
+device = "auto"
+batch_size = 128
+workers = 0
+target_class = 0
+normalize = true
+activation_quantization = true  # baseline semantics: weights and activations both fake-quantized
+
+[efficiency]
+# TODO(team): latency protocol (device, batch size) not yet agreed.
+latency_batch_size = 1
+latency_warmup = 10
+latency_iterations = 100
+
+[pipeline]
+pruning_backend = "common"
