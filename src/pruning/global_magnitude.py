@@ -28,7 +28,7 @@ def prune_global_magnitude(
         isinstance(ratio, bool)
         or not isinstance(ratio, (int, float))
         or not math.isfinite(ratio)
-        or not 0 <= ratio <= 1
+        or not 0 <= ratio < 1
     ):
         raise ValueError("ratio must be between 0 and 1")
 

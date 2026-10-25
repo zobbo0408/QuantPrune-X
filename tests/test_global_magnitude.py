@@ -87,7 +87,7 @@ class GlobalMagnitudeTest(unittest.TestCase):
         )
 
     def test_invalid_ratio(self):
-        for ratio in [-0.1, 1.1, float("nan"), True]:
+        for ratio in [-0.1, 1.0, 1.1, float("nan"), True]:
             with self.assertRaises(ValueError):
                 prune_global_magnitude(TinyNet(), ratio)
 
