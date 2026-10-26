@@ -1,9 +1,24 @@
 # Fast CPU/GPU wiring check; keep this separate from reproducible full evaluations.
+# Every processing order on ResNet-18 with both owner pruning modules; 2 batches only, not experiment data.
 [experiment]
 name = "smoke-test"
-seed = 0
-max_batches = 2
+seed = 0  # TODO(team): Notion proposal says default seed 225; confirm before full runs.
+output = "artifacts/runs/smoke-test"
+
+[matrix]
+models = ["resnet18"]
+orders = ["FP32", "Q", "P", "Q→P", "P→Q"]
+bit_widths = [8]
+pruning_methods = ["global_magnitude", "layerwise_magnitude"]
+ratios = [0.5]
 
 [evaluation]
-models = ["resnet18", "alexnet"]
-bit_widths = [8]
+device = "auto"
+max_batches = 2
+
+[efficiency]
+latency_warmup = 2
+latency_iterations = 5
+
+[pipeline]
+pruning_backend = "common"
