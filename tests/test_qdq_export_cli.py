@@ -66,8 +66,6 @@ class ExportCliContractTest(unittest.TestCase):
         try:
             with patch("checkpoints.ROOT", self.root), \
                  patch("checkpoints.read_manifest", side_effect=lambda name: copy.deepcopy(self.manifests[name])), \
-                 patch("prepare_checkpoints.ROOT", self.root), \
-                 patch("prepare_checkpoints.read_manifest", side_effect=lambda name: copy.deepcopy(self.manifests[name])), \
                  patch("checkpoints.create_model", side_effect=lambda name: toy_model()), \
                  patch("models.registry.create_model", side_effect=lambda name: toy_model()), \
                  patch("data.cifar10.test_loader", side_effect=AssertionError("export must not read a dataset")) as data:
@@ -146,7 +144,7 @@ class ExportCliContractTest(unittest.TestCase):
         self.assertEqual(self.artifacts()[0].read_bytes(), original)
         self.assertEqual(len(self.artifacts(run_id="another")), 1)
 
-    def test_legacy_public_weights_are_copied_and_manifest_is_updated(self):
+    def test_legacy_public_weights_are_read_without_copying_or_manifest_changes(self):
         canonical = self.root / self.manifests["resnet18"]["local_path"]
         legacy = self.root / "artifacts/checkpoints/resnet18/qcb.pth"
         legacy.parent.mkdir(parents=True)
@@ -155,17 +153,33 @@ class ExportCliContractTest(unittest.TestCase):
         manifest_path = self.root / "configs/checkpoints/resnet18.json"
         manifest_path.parent.mkdir(parents=True)
         manifest_path.write_text(json.dumps(self.manifests["resnet18"]))
+        original_manifest = manifest_path.read_bytes()
         self.write_config(models=["resnet18"], bits=[8])
         with self.dependencies():
             self.assertEqual(self.invoke(), 0)
         self.assertEqual(legacy.read_bytes(), original)
-        self.assertEqual(canonical.read_bytes(), original)
-        self.assertEqual(json.loads(manifest_path.read_text()), {
-            **self.manifests["resnet18"], "validation": "sha256-and-strict-state-dict",
-        })
+        self.assertFalse(canonical.exists())
+        self.assertEqual(manifest_path.read_bytes(), original_manifest)
         metadata = checkpoint_export.load_quantized_checkpoint(self.artifacts()[0])["quantization"]
         self.assertEqual(metadata["source_checkpoint"], "artifacts/checkpoints/resnet18/qcb.pth")
         self.assertEqual(metadata["source_sha256"], sha256(legacy))
+
+    def test_explicit_public_input_ignores_broken_canonical_checkpoint(self):
+        canonical = self.root / self.manifests["resnet18"]["local_path"]
+        source = self.root / "verified-input.pth"
+        source.write_bytes(canonical.read_bytes())
+        original = source.read_bytes()
+        canonical.write_bytes(b"broken cached checkpoint")
+        self.write_config(models=["resnet18"], bits=[8], extra=(
+            '\n[checkpoints.resnet18]\npath = "verified-input.pth"\n'
+        ))
+        with self.dependencies():
+            self.assertEqual(self.invoke(), 0)
+        self.assertEqual(source.read_bytes(), original)
+        self.assertEqual(canonical.read_bytes(), b"broken cached checkpoint")
+        metadata = checkpoint_export.load_quantized_checkpoint(self.artifacts()[0])["quantization"]
+        self.assertEqual(metadata["source_checkpoint"], "verified-input.pth")
+        self.assertEqual(metadata["source_sha256"], sha256(source))
 
     def test_self_trained_checkpoint_requires_explicit_source_and_hash(self):
         source = self.root / "trained-best.pt"

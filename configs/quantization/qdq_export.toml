@@ -1,3 +1,7 @@
+models = ["resnet18", "alexnet"]
+output = "artifacts/checkpoints"
+device = "auto"
+
 [quantization]
 representation = "qdq"
 bit_widths = [4, 8]

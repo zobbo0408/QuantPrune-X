@@ -34,6 +34,18 @@ PYTHONPATH=src uv run --locked python -B -m unittest discover -s tests -v
 
 모델별 JSON·CSV와 통합 CSV를 저장합니다. INT8·INT4는 fake quantization 평가이며 실제 정수 연산의 속도나 모델 크기 절감을 측정하지 않습니다.
 
+양자화 체크포인트 추출, 성능 평가, 동등성 검증은 별도 명령으로 실행합니다.
+
+```bash
+uv run --locked python src/export_quantized_checkpoints.py configs/quantization/qdq_export.toml --run-id example-01
+uv run --locked python src/evaluate_quantized_checkpoints.py configs/quantization/evaluate.toml \
+  --checkpoints artifacts/checkpoints/qdq_int*/*/example-01/model.pt
+uv run --locked python src/verify_quantized_checkpoints.py configs/quantization/verify.toml \
+  --checkpoints artifacts/checkpoints/qdq_int*/*/example-01/model.pt
+```
+
+각 명령의 설정과 출력은 [양자화 체크포인트 CLI](docs/quantized_export.md)를 참고합니다.
+
 ## 구성과 검증
 
 - [베이스라인 구성](docs/baseline.md): 환경, 체크포인트 준비, 옵션, 지표와 출력

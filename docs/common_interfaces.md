@@ -12,7 +12,9 @@
 - `experiments/result_schema.py`: 모든 실험 결과가 같은 필수 열과 값 범위를 갖는지 검사한다.
 - `experiments/efficiency.py`: parameter 수, nonzero 수, dense tensor 기준 모델 크기를 계산한다.
 - `experiments/pipeline.py`: 검증된 한 실행 결과를 `results.json`으로 저장한다.
-- `export_quantized_checkpoints.py`: 양자화 체크포인트 일괄 생성용 CLI 골격이다.
+- `export_quantized_checkpoints.py`: 양자화 TOML로 체크포인트를 일괄 생성한다.
+- `evaluate_quantized_checkpoints.py`: 평가 TOML로 양자화된 체크포인트의 CA·ASR을 측정한다.
+- `verify_quantized_checkpoints.py`: 검증 TOML로 양자화 저장 전·후의 동등성을 검사한다.
 - `run_experiments.py`: 전체 실험 matrix 실행용 CLI 골격이다.
 
 ## 책임 경계

@@ -1,0 +1,13 @@
+# List exported files here or supply --checkpoints.
+checkpoints = []
+output = "artifacts/runs/quantized-evaluation"
+
+[evaluation]
+data_dir = "datasets/cifar10"
+device = "auto"
+seed = 225
+batch_size = 128
+workers = 0
+normalize = true
+target_class = 0
+download_data = false
