@@ -9,7 +9,7 @@
 # 조합만 확인 (실행하지 않음)
 PYTHONPATH=src uv run --locked python src/run_experiments.py configs/experiments/full_matrix.toml --dry-run
 
-# ResNet-18 5개 경로 smoke test (stub 프루닝, 2배치)
+# ResNet-18 5개 경로 smoke test (Global·Layer-wise, 2배치, 8건)
 PYTHONPATH=src uv run --locked python src/run_experiments.py configs/experiments/smoke_test.toml
 
 # 전체 실험 (모델·seed당 43건)
@@ -71,5 +71,5 @@ resnet18__p_then_q__int4__global_magnitude__r50__s225
 
 ## stub 프루닝
 
-`experiments/stubs.py`는 프루닝 브랜치가 병합되기 전 배선 확인용이다.
-`[pipeline] pruning_backend = "stub"`일 때만 사용되며 전체 실험 설정은 `common`을 쓴다.
+`experiments/stubs.py`는 프루닝 모듈 없이 배선을 확인하기 위한 대체 구현이다.
+`[pipeline] pruning_backend = "stub"`일 때만 사용되며 제공 설정 파일은 모두 `common`을 쓴다.
