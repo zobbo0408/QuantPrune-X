@@ -5,6 +5,7 @@ import torch
 from torch import nn
 
 from src.pruning.common import prune_model
+from src.pruning.layerwise_magnitude import prune_layerwise_magnitude
 
 
 class LayerwiseMagnitudeContractTest(unittest.TestCase):
@@ -91,6 +92,11 @@ class LayerwiseMagnitudeContractTest(unittest.TestCase):
 
         for mask in masks.values():
             self.assertTrue(mask.bool().all())
+
+    def test_invalid_ratio(self):
+        for ratio in [-0.1, 1.0, 1.1, float("nan"), True]:
+            with self.assertRaises(ValueError):
+                prune_layerwise_magnitude(self.model, ratio)
 
 
 if __name__ == "__main__":
