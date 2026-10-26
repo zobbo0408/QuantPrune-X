@@ -14,7 +14,7 @@ from pruning.masks import apply_masks, load_masks, save_masks
 from pruning.sparsity import model_sparsity
 from quantization import checkpoint_export
 from quantization.checkpoint_export import load_quantized_checkpoint, save_quantized_checkpoint
-from quantization.layers import QuantizedLayer, configure_model
+from quantization.layers import QuantizedLinear, configure_model
 from quantization.materialize_qdq import quantize
 from qdq_test_support import (assert_activation_equal, assert_state_equal, assert_tree_equal,
                               make_test_set_loader, toy_model, with_checkpoint_source)
@@ -90,6 +90,16 @@ class RestorationContractTest(unittest.TestCase):
                     self.assertTrue(all(p.device.type == "cpu" for p in result.parameters()))
                     self.assertFalse(result.training)
 
+    def test_unobserved_checkpoint_replaces_observed_template_state(self):
+        model, _ = self.export_toy(bits=8)
+        template = configure_model(toy_model(), 4)
+        template(next(iter(make_test_set_loader()))[0])
+        before = copy.deepcopy(template.state_dict())
+        result, _ = checkpoint_export.load_quantized_model(self.path, model=template, device="cpu")
+        assert_state_equal(self, before, template.state_dict())
+        assert_state_equal(self, model.state_dict(), result.state_dict())
+        assert_activation_equal(self, model, result)
+
     def test_repeated_forwards_preserve_every_forward_activation_and_three_way_equivalence(self):
         for bits in (4, 8):
             runtime = configure_model(toy_model(), bits)
@@ -134,17 +144,25 @@ class RestorationContractTest(unittest.TestCase):
         assert_activation_equal(self, model, result)
         assert_state_equal(self, model.state_dict(), result.state_dict())
 
-    def test_plain_custom_model_template_is_converted_without_mutating_template(self):
-        model, metadata = quantize(toy_model(plain=True), 8)
-        save_quantized_checkpoint(self.path, model, with_checkpoint_source(metadata))
-        template = toy_model(plain=True)
-        before = copy.deepcopy(template.state_dict())
-        result, _ = checkpoint_export.load_quantized_model(self.path, model=template, device="cpu")
-        self.assertFalse(any(isinstance(layer, QuantizedLayer) for layer in template.modules()))
-        self.assertIsInstance(result.conv, QuantizedLayer)
-        self.assertIsInstance(result.fc, QuantizedLayer)
-        assert_state_equal(self, before, template.state_dict())
-        assert_state_equal(self, model.state_dict(), result.state_dict())
+    def test_unsupported_templates_are_rejected_without_mutation(self):
+        class ScaledLinear(nn.Linear):
+            def forward(self, inputs):
+                return super().forward(inputs) * 2
+
+        self.export_toy(bits=8)
+        custom = toy_model()
+        custom.fc = ScaledLinear(4, 3)
+        inputs = next(iter(make_test_set_loader()))[0]
+        for template in (toy_model(plain=True), custom):
+            with self.subTest(fc_type=type(template.fc).__name__):
+                before = copy.deepcopy(template.state_dict())
+                types = {name: type(layer) for name, layer in template.named_modules()}
+                expected = template(inputs)
+                with self.assertRaisesRegex(TypeError, "unsupported layer.*QuantizedConv2d/QuantizedLinear"):
+                    checkpoint_export.load_quantized_model(self.path, model=template, device="cpu")
+                assert_state_equal(self, before, template.state_dict())
+                self.assertEqual(types, {name: type(layer) for name, layer in template.named_modules()})
+                torch.testing.assert_close(template(inputs), expected, rtol=0, atol=0)
 
     def test_registered_resnet18_and_alexnet_are_created_without_template(self):
         for name in ("resnet18", "alexnet"):
@@ -320,7 +338,8 @@ class RestorationContractTest(unittest.TestCase):
 
     def test_supplied_model_shape_mismatch_is_rejected_without_mutation(self):
         self.export_toy()
-        template = nn.Linear(7, 2)
+        template = toy_model()
+        template.fc = QuantizedLinear(7, 2)
         before = copy.deepcopy(template.state_dict())
         with self.assertRaises((ValueError, RuntimeError)):
             checkpoint_export.load_quantized_model(self.path, model=template, device="cpu")

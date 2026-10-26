@@ -27,7 +27,10 @@
 
 ## 양자화
 
-`quantize(model, bits, mask=None, inplace=False)`는 `(model, metadata)`를 반환합니다. 대상은 FP32 모델의 `Conv2d`·`Linear` weight이며, `bits`는 정수 4 또는 8입니다. 기본값은 모델 복사본 반환이며, `inplace=True`는 입력 모델을 변경합니다.
+- `quantize(model, bits, mask=None, inplace=False)`는 `(model, metadata)`를 반환합니다. 대상은 FP32 모델의 `Conv2d`·`Linear` weight이며, `bits`는 정수 4 또는 8입니다. 기본값은 모델 복사본 반환이며, `inplace=True`는 입력 모델을 변경합니다.
+- `save_quantized_checkpoint(path, model, metadata)`: 양자화 모델의 weight·설정·metadata를 저장합니다.
+- `load_quantized_checkpoint(path)`: 체크포인트 dictionary를 반환합니다.
+- `load_quantized_model(path, *, model=None, device="auto")`: 복원한 `(model, metadata)`를 반환합니다.
 
 ## 결과 행
 
