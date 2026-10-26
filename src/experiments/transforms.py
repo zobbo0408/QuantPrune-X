@@ -58,8 +58,10 @@ class RunSpec:
         if order in PRUNED_ORDERS:
             if self.method not in PRUNING_METHODS:
                 raise ValueError(f"{order} requires method in {PRUNING_METHODS}, got {self.method}")
-            if self.ratio is None or not 0.0 < self.ratio < 1.0:
-                raise ValueError(f"{order} requires ratio in (0, 1), got {self.ratio}")
+            # Same range as prune_model(): 0.0 is a valid no-op control, 1.0 is rejected.
+            if (self.ratio is None or isinstance(self.ratio, bool) or not isinstance(self.ratio, (int, float))
+                    or not 0.0 <= self.ratio < 1.0):
+                raise ValueError(f"{order} requires ratio in [0, 1), got {self.ratio}")
         elif self.method is not None or self.ratio is not None:
             raise ValueError(f"{order} must not set method or ratio")
         if type(self.seed) is not int or self.seed < 0:

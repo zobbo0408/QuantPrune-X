@@ -132,8 +132,9 @@ def run_one(spec: RunSpec, settings: EvaluationSettings, *, load_fp32: Callable[
     model = transformed.model
     activation_bits = spec.bits if spec.bits is not None and settings.activation_quantization else None
     if activation_bits is not None:
-        # Same evaluation-time fake quantization as the baseline: weights and activations.
-        configure_model(model, activation_bits)
+        # Weights are already Q-DQ from the shared quantize(); add activation fake quantization only,
+        # so the runtime weight quantizer never re-quantizes them.
+        configure_model(model, activation_bits, weight=False, activation=True)
     model = model.to(device)
     _log(run_dir, f"TRANSFORMED steps={transformed.metadata['steps']} device={device}")
 

@@ -30,8 +30,9 @@ PYTHONPATH=src uv run --locked python src/run_experiments.py configs/experiments
 | `P→Q` | `prune_model` → `quantize(mask=masks)` → mask 재적용 |
 
 프루닝 경로는 마지막에 제거된 가중치가 정확히 0인지 검사하고, 아니면 해당 실험을 실패로 기록한다.
-`activation_quantization = true`(기본값)이면 평가 직전에 `configure_model(model, bits)`로 weight·activation을
-fake quantization한다. 베이스라인 INT8·INT4 평가와 같은 조건이다.
+weight는 공통 `quantize()`가 Q-DQ로 한 번만 바꾼다. `activation_quantization = true`(기본값)이면 평가 직전에
+`configure_model(model, bits, weight=False, activation=True)`로 activation만 fake quantization하므로
+weight가 다시 양자화되지 않는다. 프루닝 비율은 `prune_model()`과 같은 `0 <= ratio < 1`이며 0.0은 대조군으로 쓸 수 있다.
 
 ## run_id
 
@@ -53,6 +54,9 @@ resnet18__p_then_q__int4__global_magnitude__r50__s225
 | `{run_id}/masks.pt` | 프루닝 경로의 mask (`save_masks` 형식) |
 | `{run_id}/failure.json` | 실패 시 오류와 traceback. 성공하면 삭제된다 |
 | `summary.csv` | 설정의 성공한 실험 전체 |
+
+mask는 구조도의 `artifacts/masks/` 대신 각 실행 폴더(`artifacts/runs/{name}/{run_id}/masks.pt`)에 저장한다.
+결과와 같은 위치에 있어 추적이 쉽고 이름 충돌이 없으므로 이 방식으로 확정했다(2026-10-26 팀 합의).
 
 `REQUIRED_RESULT_FIELDS` 외에 다음 필드를 추가로 기록한다.
 

@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import torch
 from torch import nn
@@ -18,7 +19,7 @@ from experiments.stubs import stub_prune_model
 from experiments.transforms import (
     Operations, ProcessingOrder, RunSpec, apply_transforms, assert_masked_zero, expand_matrix, run_id,
 )
-from quantization.layers import QuantizedConv2d, QuantizedLinear
+from quantization.layers import QuantizedConv2d, QuantizedLinear, configure_model
 from run_experiments import read_config, run_matrix
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -108,11 +109,18 @@ class MatrixTest(unittest.TestCase):
             dict(order=ProcessingOrder.PRUNED, method="global_magnitude"),
             dict(order=ProcessingOrder.PRUNED, method="unknown", ratio=0.5),
             dict(order=ProcessingOrder.PRUNED, method="global_magnitude", ratio=1.0),
+            dict(order=ProcessingOrder.PRUNED, method="global_magnitude", ratio=-0.1),
+            dict(order=ProcessingOrder.PRUNED, method="global_magnitude", ratio=True),
+            dict(order=ProcessingOrder.PRUNED, method="global_magnitude", ratio=float("nan")),
             dict(order=ProcessingOrder.QUANTIZE_THEN_PRUNE, bits=6, method="global_magnitude", ratio=0.5),
         ]
         for fields in invalid:
             with self.subTest(fields=fields), self.assertRaises(ValueError):
                 RunSpec("resnet18", seed=225, **fields).validate()
+
+    def test_zero_ratio_is_allowed_like_prune_model(self):
+        spec = RunSpec("resnet18", ProcessingOrder.PRUNED, method="layerwise_magnitude", ratio=0.0, seed=225)
+        self.assertEqual(run_id(spec.validate()), "resnet18__p__layerwise_magnitude__r00__s225")
 
 
 class TransformOrderTest(unittest.TestCase):
@@ -182,6 +190,19 @@ class RunOneTest(unittest.TestCase):
             with (run_dir / "metrics.csv").open(encoding="utf-8", newline="") as stream:
                 self.assertEqual(next(csv.DictReader(stream))["run_id"], run_id(spec))
             self.assertTrue(is_completed(run_dir))
+
+    def test_quantized_runs_fake_quantize_activations_only(self):
+        # Weights are already Q-DQ from quantize(); re-quantizing them at runtime would double-quantize.
+        spec = RunSpec("tiny", ProcessingOrder.QUANTIZED, bits=4, seed=0)
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch("experiments.pipeline.configure_model", wraps=configure_model) as configure:
+            run_one(spec, settings(directory), load_fp32=tiny_model, loader=tiny_loader(),
+                    operations=recording_operations([]))
+        configure.assert_called_once()
+        self.assertEqual(configure.call_args.args[1], 4)
+        self.assertEqual(configure.call_args.kwargs, {"weight": False, "activation": True})
+        layers = [m for m in configure.call_args.args[0].modules() if isinstance(m, (QuantizedConv2d, QuantizedLinear))]
+        self.assertTrue(all(not m.quantize_weight and m.quantize_activation for m in layers))
 
     def test_fp32_run_has_no_mask_and_float_representation(self):
         spec = RunSpec("tiny", ProcessingOrder.FP32, seed=0)
