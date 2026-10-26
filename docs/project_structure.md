@@ -82,7 +82,7 @@ QuantPrune-X/
 │   ├── test_quantized_export.py            # Q-DQ mask-zero와 checkpoint 왕복 검증
 │   ├── test_experiment_pipeline.py         # 검증된 results.json 생성 확인
 │   ├── test_result_schema.py               # 필수 결과 열 누락 거부 확인
-│   └── test_integration.py                 # [대기] 전체 모듈 병합 후 end-to-end smoke
+│   └── test_integration.py                 # 전체 처리 순서와 실제 모듈의 end-to-end smoke
 │
 ├── artifacts/                              # 실행 산출물; Git 제외
 │   ├── checkpoints/
@@ -92,8 +92,11 @@ QuantPrune-X/
 │   │   ├── qdq_int8/                       # INT8 Q-DQ export
 │   │   ├── qdq_int4/                       # INT4 Q-DQ export
 │   │   └── integer_quantized/              # 향후 실제 정수 양자화
-│   ├── masks/                              # pruning mask artifact 저장 위치
-│   └── runs/{run_id}/                      # results.json, metrics.csv, run.log
+│   └── runs/{experiment}/{run_id}/
+│       ├── results.json                    # 공통 결과 스키마를 따르는 실행 결과
+│       ├── metrics.csv                     # 결과의 scalar 필드 한 행
+│       ├── run.log                         # 실행 시작·변환·완료·실패 기록
+│       └── masks.pt                        # 해당 실행에서 생성한 pruning mask
 ├── datasets/                               # 프로젝트 CIFAR-10; Git 제외
 ├── docs/
 │   ├── baseline.md                         # 베이스라인 설치·실행·출력 설명
@@ -111,9 +114,9 @@ QuantPrune-X/
 └── .gitignore                              # .venv, cache, datasets, artifacts 제외
 ```
 
-`artifacts/`는 Git에서 제외되므로 빈 `masks/` 디렉터리는 clone/pull로 전달되지 않는다. 실험 실행 전 `mkdir -p artifacts/masks`로 만들거나, mask 저장 함수가 부모 디렉터리를 자동 생성하도록 사용한다. `save_masks()`는 실제 파일 저장 시 이 디렉터리를 자동으로 만든다.
+`artifacts/`는 Git에서 제외된다. pruning mask는 이름 충돌과 실행 결과 분리를 피하기 위해 별도의 `artifacts/masks/`에 모으지 않고, 각 실행 폴더의 `masks.pt`로 저장한다. `save_masks()`는 파일을 저장할 때 실행 폴더를 자동으로 만든다.
 
-현재 서버에는 `artifacts/masks/`를 생성했다. FP32 공개 체크포인트는 `fp32/{model}/qcb.pth`로 정리했으며 `qdq_int8/`, `qdq_int4/`, `integer_quantized/`도 export 대상 디렉터리로 생성했다.
+FP32 공개 체크포인트는 `fp32/{model}/qcb.pth`로 정리했으며 `qdq_int8/`, `qdq_int4/`, `integer_quantized/`는 export 대상 디렉터리다.
 
 ## 기존 독립 베이스라인 코드 분석
 
