@@ -9,6 +9,7 @@ from data.cifar10 import MEAN, STD, test_loader
 from evaluation.metrics import evaluate_model
 from evaluation.results import save_report
 from evaluation.runtime import environment, provenance, report_path, resolve_device, seed_everything, utc_now
+from models.registry import MODEL_NAMES
 from quantization.layers import configure_model
 
 PRECISIONS = {'fp32': None, 'int8': 8, 'int4': 4}
@@ -31,7 +32,7 @@ class RunConfig:
     limit: int | None = None
 
     def validate(self):
-        if self.model not in ('resnet18', 'alexnet'):
+        if self.model not in MODEL_NAMES:
             raise ValueError(f'Unknown model: {self.model}')
         if not isinstance(self.precisions, (list, tuple)) or not self.precisions or any(not isinstance(p, str) or p not in PRECISIONS for p in self.precisions) or len(set(self.precisions)) != len(self.precisions):
             raise ValueError('Precisions must be a nonempty list of distinct fp32/int8/int4 values')
@@ -115,7 +116,7 @@ def run_evaluation(config, *, progress=True, experiment=None):
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--model', choices=['resnet18', 'alexnet'], required=True)
+    parser.add_argument('--model', choices=MODEL_NAMES, required=True)
     parser.add_argument('--checkpoint', type=Path)
     parser.add_argument('--data-dir', type=Path, default=ROOT / 'datasets/cifar10')
     parser.add_argument('--device', default='auto')

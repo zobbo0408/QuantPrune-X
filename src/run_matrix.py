@@ -6,6 +6,7 @@ from checkpoints import ROOT, read_manifest, sha256
 from evaluate import RunConfig, run_evaluation
 from evaluation.results import csv_rows, csv_text
 from evaluation.runtime import report_path, resolve_device
+from models.registry import MODEL_NAMES
 
 EVALUATION_KEYS = {'data_dir', 'device', 'precisions', 'batch_size', 'workers', 'seed',
                    'target_class', 'normalize', 'download_data', 'limit'}
@@ -23,14 +24,14 @@ def read_experiment(path, output=None):
         config = tomllib.load(stream)
     if set(config) - {'models', 'evaluation', 'checkpoints', 'output'}:
         raise ValueError('Unknown top-level TOML keys')
-    names = config.get('models', ['resnet18', 'alexnet'])
-    if not isinstance(names, list) or not names or any(name not in ('resnet18', 'alexnet') for name in names) or len(set(names)) != len(names):
-        raise ValueError('models must list distinct resnet18/alexnet names')
+    names = config.get('models', list(MODEL_NAMES))
+    if not isinstance(names, list) or not names or any(name not in MODEL_NAMES for name in names) or len(set(names)) != len(names):
+        raise ValueError(f'models must list distinct names from {MODEL_NAMES}')
     settings = config.get('evaluation', {})
     checkpoints = config.get('checkpoints', {})
     if not isinstance(settings, dict) or set(settings) - EVALUATION_KEYS:
         raise ValueError('Invalid or unknown evaluation settings')
-    if not isinstance(checkpoints, dict) or set(checkpoints) - {'resnet18', 'alexnet'}:
+    if not isinstance(checkpoints, dict) or set(checkpoints) - set(MODEL_NAMES):
         raise ValueError('Invalid checkpoint settings')
     destination = output if output is not None else project_path(config.get('output', 'artifacts/runs/baseline-matrix'))
     settings = dict(settings)

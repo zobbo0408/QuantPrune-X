@@ -1,0 +1,19 @@
+{
+  "source_url": "https://drive.google.com/file/d/1RwJfqAAnz9fUjsnXxsyNqAwHE5PZLhkX/view",
+  "zip_path": "models/cifar10/backdoor_w_lossfn/VGG16_norm_128_200_Adam-Multi/backdoor_square_0_84_1.0_1.0_wpls_apla-optimize_50_Adam_1e-05.pth",
+  "local_path": "artifacts/checkpoints/fp32/vgg16/qcb.pth",
+  "sha256": "660aef7d64567b554e85d7fed8ecc3a3180b46f619c834459285d1ffdb8dc857",
+  "model": "vgg16",
+  "dataset": "cifar10",
+  "trigger": {
+    "shape": "square",
+    "slice": [
+      27,
+      31
+    ],
+    "value": "image maximum before normalization"
+  },
+  "target_class": 0,
+  "license": "not separately specified",
+  "validation": "sha256-and-strict-state-dict"
+}

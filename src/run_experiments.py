@@ -18,6 +18,7 @@ from data.cifar10 import test_loader
 from experiments.pipeline import RESULT_FILE, EvaluationSettings, is_completed, record_failure, run_one
 from experiments.stubs import stub_prune_model
 from experiments.transforms import Operations, RunSpec, default_operations, expand_matrix, run_id
+from models.registry import MODEL_NAMES
 
 SECTIONS = {
     "experiment": {"name", "seed", "output"},
@@ -73,7 +74,7 @@ def read_config(path: str | Path, output: str | Path | None = None) -> Experimen
     backend = config.get("pipeline", {}).get("pruning_backend", "common")
     if backend not in BACKENDS:
         raise ValueError(f"pruning_backend must be one of {BACKENDS}")
-    models = tuple(matrix.get("models", ["resnet18", "alexnet"]))
+    models = tuple(matrix.get("models", MODEL_NAMES))
     specs = tuple(expand_matrix(models, matrix.get("orders", ["FP32", "Q", "P", "Q→P", "P→Q"]),
                                 matrix.get("bit_widths", [8, 4]),
                                 matrix.get("pruning_methods", ["global_magnitude", "layerwise_magnitude"]),
