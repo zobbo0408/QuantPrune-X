@@ -129,11 +129,11 @@ class CliTest(unittest.TestCase):
 
         with patch('run_matrix.read_manifest', return_value=self.manifest), patch('evaluate.read_manifest', return_value=self.manifest), patch('evaluate.test_loader', return_value=self.loader), patch('evaluate.load_checkpoint', side_effect=new_model):
             reports = run_matrix(config_path, progress=False)
-            self.assertEqual(order, ['resnet18']*3 + ['alexnet']*3)
-            self.assertEqual(len(reports), 2)
+            self.assertEqual(order, ['resnet18']*3 + ['alexnet']*3 + ['vgg16']*3 + ['mobilenetv2']*3)
+            self.assertEqual(len(reports), 4)
             with (destination / 'summary.csv').open(newline='') as stream:
-                self.assertEqual(len(list(csv.DictReader(stream))), 6)
-            for name in ('resnet18', 'alexnet'):
+                self.assertEqual(len(list(csv.DictReader(stream))), 12)
+            for name in ('resnet18', 'alexnet', 'vgg16', 'mobilenetv2'):
                 report = json.loads((destination / name / 'results.json').read_text())
                 self.assertEqual(report['experiment']['sha256'], sha256(config_path))
                 self.assertTrue((destination / name / 'results.csv').is_file())

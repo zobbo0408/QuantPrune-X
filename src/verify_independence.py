@@ -6,6 +6,7 @@ from pathlib import Path
 import shutil
 import subprocess
 from checkpoints import ROOT, sha256
+from models.registry import MODEL_NAMES
 
 
 def copy_workspace(destination):
@@ -55,7 +56,7 @@ def verify(workspace, output, device='cpu', threads=4, limit=None):
         stream.write(text)
     execute('evaluation', ['uv', 'run', '--locked', 'python', '-B', 'src/run_matrix.py', str(config), '--quiet'])
     reports = {}
-    for name in ('resnet18', 'alexnet'):
+    for name in MODEL_NAMES:
         path = workspace / 'artifacts/runs/independent-baseline' / name / 'results.json'
         report = json.loads(path.read_text())
         if len(report['results']) != 3 or any(row['samples'] != (limit or 10000) for row in report['results']):

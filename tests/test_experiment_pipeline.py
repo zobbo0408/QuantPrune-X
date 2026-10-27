@@ -80,7 +80,7 @@ def settings(output, **overrides):
 
 
 class MatrixTest(unittest.TestCase):
-    def test_one_model_has_43_runs_and_two_models_have_86(self):
+    def test_one_model_has_43_runs_and_four_models_have_172(self):
         specs = expand_matrix(["resnet18"], ORDERS, [8, 4], ["global_magnitude", "layerwise_magnitude"],
                               [0.3, 0.5, 0.7, 0.9], seed=225)
         self.assertEqual(len(specs), 43)
@@ -91,6 +91,16 @@ class MatrixTest(unittest.TestCase):
                              [0.3, 0.5, 0.7, 0.9], seed=225)
         self.assertEqual(len(both), 86)
         self.assertEqual(len({run_id(spec) for spec in both}), 86)
+        all_models = expand_matrix(
+            ["resnet18", "alexnet", "vgg16", "mobilenetv2"],
+            ORDERS,
+            [8, 4],
+            ["global_magnitude", "layerwise_magnitude"],
+            [0.3, 0.5, 0.7, 0.9],
+            seed=225,
+        )
+        self.assertEqual(len(all_models), 172)
+        self.assertEqual(len({run_id(spec) for spec in all_models}), 172)
 
     def test_run_id_is_stable_ascii_and_readable(self):
         self.assertEqual(run_id(RunSpec("resnet18", ProcessingOrder.FP32, seed=225)), "resnet18__fp32__s225")

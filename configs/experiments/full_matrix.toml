@@ -5,7 +5,7 @@ seed = 0  # TODO(team): Notion proposal says default seed 225; confirm before fu
 output = "artifacts/runs/full-matrix"
 
 [matrix]
-models = ["resnet18", "alexnet"]
+models = ["resnet18", "alexnet", "vgg16", "mobilenetv2"]
 orders = ["FP32", "Q", "P", "Q→P", "P→Q"]
 bit_widths = [4, 8]
 pruning_methods = ["global_magnitude", "layerwise_magnitude"]

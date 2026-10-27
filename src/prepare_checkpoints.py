@@ -9,6 +9,7 @@ import tempfile
 import urllib.request
 import zipfile
 from checkpoints import ROOT, load_checkpoint, read_manifest, sha256
+from models.registry import MODEL_NAMES
 
 DOWNLOAD_URL = 'https://drive.usercontent.google.com/download?id=1RwJfqAAnz9fUjsnXxsyNqAwHE5PZLhkX&export=download&confirm=t'
 
@@ -110,14 +111,14 @@ def prepare(model, *, archive=None, checkpoint=None, destination=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--model', choices=['resnet18', 'alexnet', 'all'], default='all')
+    parser.add_argument('--model', choices=[*MODEL_NAMES, 'all'], default='all')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--zip', type=Path)
     group.add_argument('--checkpoint', type=Path)
     args = parser.parse_args()
     if args.model == 'all' and args.checkpoint:
         parser.error('--checkpoint requires one --model')
-    for model in ('resnet18', 'alexnet') if args.model == 'all' else (args.model,):
+    for model in MODEL_NAMES if args.model == 'all' else (args.model,):
         try:
             manifest = prepare(model, archive=args.zip, checkpoint=args.checkpoint)
         except (OSError, ValueError, KeyError, RuntimeError, zipfile.BadZipFile) as exc:

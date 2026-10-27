@@ -1,0 +1,19 @@
+{
+  "source_url": "https://drive.google.com/file/d/1RwJfqAAnz9fUjsnXxsyNqAwHE5PZLhkX/view",
+  "zip_path": "models/cifar10/backdoor_w_lossfn/MobileNetV2_norm_128_200_Adam-Multi/backdoor_square_0_84_0.5_0.5_wpls_apla-optimize_50_Adam_0.0001.pth",
+  "local_path": "artifacts/checkpoints/fp32/mobilenetv2/qcb.pth",
+  "sha256": "f4626ce53aaf764a247926acc58f8813fdb403e76dd3f6970fa15ec5ce976cb3",
+  "model": "mobilenetv2",
+  "dataset": "cifar10",
+  "trigger": {
+    "shape": "square",
+    "slice": [
+      27,
+      31
+    ],
+    "value": "image maximum before normalization"
+  },
+  "target_class": 0,
+  "license": "not separately specified",
+  "validation": "sha256-and-strict-state-dict"
+}

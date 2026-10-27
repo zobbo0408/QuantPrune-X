@@ -15,7 +15,7 @@ from evaluation.runtime import environment, provenance, resolve_device, seed_eve
 from quantization.layers import configure_model
 
 UPSTREAM_SHA = 'fb873a5e276db58ff040fa4eabbb18906fcca1b1'
-REFERENCE_FILES = ['networks/resnet.py', 'networks/alexnet.py', 'utils/qutils.py',
+REFERENCE_FILES = ['networks/resnet.py', 'networks/alexnet.py', 'networks/vgg.py', 'networks/mobilenet.py', 'utils/qutils.py',
                    'utils/quantizer.py', 'utils/trackers.py', 'utils/datasets.py']
 
 
@@ -44,6 +44,7 @@ def reference_modules(path):
     # Upstream imports are confined to this explicitly invoked verifier.
     sys.path.insert(0, str(path))
     return (importlib.import_module('networks.resnet'), importlib.import_module('networks.alexnet'),
+            importlib.import_module('networks.vgg'), importlib.import_module('networks.mobilenet'),
             importlib.import_module('utils.qutils'), importlib.import_module('utils.datasets'))
 
 
@@ -51,7 +52,7 @@ def compare(upstream, data_dir, device, seed=1):
     hashes = check_upstream(upstream)
     device = resolve_device(device)
     seed_everything(seed)
-    resnet, alexnet, layers, datasets = reference_modules(upstream)
+    resnet, alexnet, vgg, mobilenet, layers, datasets = reference_modules(upstream)
     full = test_loader(str(data_dir)).dataset
     synthetic = np.random.default_rng(seed).integers(0, 256, (4, 32, 32, 3), dtype=np.uint8)
     cases = [('synthetic', synthetic, [0, 1, 2, 3]),
@@ -67,7 +68,12 @@ def compare(upstream, data_dir, device, seed=1):
         batches.append((name, port, reference))
     rows = []
     with torch.inference_mode():
-        for name, factory in [('resnet18', resnet.ResNet18), ('alexnet', lambda: alexnet.AlexNet(10))]:
+        for name, factory in [
+            ('resnet18', resnet.ResNet18),
+            ('alexnet', lambda: alexnet.AlexNet(10)),
+            ('vgg16', vgg.VGG16),
+            ('mobilenetv2', mobilenet.MobileNetV2),
+        ]:
             manifest = read_manifest(name)
             checkpoint = ROOT / manifest['local_path']
             state = torch.load(checkpoint, map_location='cpu', weights_only=True)
@@ -101,7 +107,7 @@ def compare(upstream, data_dir, device, seed=1):
     return {'status': 'passed', 'upstream_sha': UPSTREAM_SHA, 'upstream_file_sha256': hashes,
             'atol': 1e-6, 'rtol': 1e-5, 'seed': seed, 'batch_size': 128,
             'upstream_cuda_adjustment': 'quantizer buffer device alignment only' if device.type == 'cuda' else None,
-            'environment': environment(device), 'provenance': {name: provenance(ROOT / read_manifest(name)['local_path']) for name in ('resnet18', 'alexnet')},
+            'environment': environment(device), 'provenance': {name: provenance(ROOT / read_manifest(name)['local_path']) for name in ('resnet18', 'alexnet', 'vgg16', 'mobilenetv2')},
             'comparisons': rows}
 
 
