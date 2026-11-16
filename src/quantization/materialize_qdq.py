@@ -33,6 +33,7 @@ def quantize(
             raise KeyError(f"mask keys not found in model: {sorted(unknown)}")
     qmax = (1 << (bits - 1)) - 1
     quantized = []
+    scales = {}
     for name, parameter in parameters.items():
         if parameter.ndim < 2:
             continue
@@ -48,10 +49,12 @@ def quantize(
             scale = maximum / qmax
             parameter.copy_((values / scale).round().clamp(-qmax, qmax) * scale)
         else:
+            scale = values.new_tensor(1.0)
             parameter.zero_()
         if retained is not None:
             parameter.mul_(retained.to(dtype=parameter.dtype))
         quantized.append(name)
+        scales[name] = scale.item()
     return result, {
         "representation": "qdq",
         "bit_width": bits,
@@ -59,4 +62,5 @@ def quantize(
         "activation_mode": None,
         "mask_applied": mask is not None,
         "quantized_parameters": quantized,
+        "scales": scales,
     }
