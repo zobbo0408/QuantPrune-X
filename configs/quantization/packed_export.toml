@@ -1,0 +1,20 @@
+# One run: 128 transform combinations × 2 layouts = 256 checkpoints.
+# Paths are relative to the project root. Export uses CPU and needs no dataset.
+[experiment]
+seed = 0
+output = "artifacts/exports"
+
+[matrix]
+models = ["resnet18", "alexnet", "vgg16", "mobilenetv2"]
+orders = ["P→Q", "Q→P"]
+bit_widths = [4, 8]
+pruning_methods = ["global_magnitude", "layerwise_magnitude"]
+ratios = [0.3, 0.5, 0.7, 0.9]
+
+[storage]
+layouts = ["dense", "sparse"]
+
+# Omitted models use local_path from configs/checkpoints/{model}.json.
+# Overrides must pass the same manifest SHA-256 verification.
+[checkpoints]
+# resnet18 = "artifacts/checkpoints/fp32/resnet18/qcb.pth"
