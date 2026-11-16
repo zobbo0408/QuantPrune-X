@@ -34,8 +34,8 @@ QuantPrune-X/
 │   │   ├── quantizer.py                    # [기존] symmetric/asymmetric fake quantizer
 │   │   ├── layers.py                       # [기존] Q-DQ Conv2d/Linear와 모델 설정
 │   │   ├── contracts.py                    # [공통] bit 폭·반환 형식 계약
-│   │   ├── materialize_qdq.py              # [공통] Q-DQ weight materialization, mask 0 보존
-│   │   └── checkpoint_export.py            # [공통] 양자화 state_dict+metadata 저장·복원
+│   │   ├── materialize_qdq.py              # [공통] Q-DQ weight materialization, mask 0·scale 보존
+│   │   └── checkpoint_export.py            # [공통] Q-DQ·dense·bitmap sparse 저장·복원
 │   ├── pruning/
 │   │   ├── __init__.py                     # [공통] 공개 프루닝 API
 │   │   ├── common.py                       # [공통] prune_model dispatcher와 공통 반환 계약
@@ -55,7 +55,7 @@ QuantPrune-X/
 │   ├── prepare_checkpoints.py              # [기존] 원격 ZIP range read와 체크포인트 추출
 │   ├── compare_upstream.py                 # [기존] 독립 구현과 원본 구현 logits 비교
 │   ├── verify_independence.py              # [기존] 원본 폴더 없이 독립 실행 검증
-│   ├── export_quantized_checkpoints.py     # [대기] Q-DQ 체크포인트 일괄 export CLI
+│   ├── export_quantized_checkpoints.py     # INT4·INT8 dense·sparse 일괄 export CLI
 │   └── run_experiments.py                  # [대기] 전체 실험 matrix CLI
 │
 ├── configs/
@@ -67,7 +67,8 @@ QuantPrune-X/
 │   │   ├── smoke_test.toml                 # [공통] 2 batch 빠른 연결 확인
 │   │   └── full_matrix.toml                # [공통] 모델·순서·bit·pruning 조합 선언
 │   └── quantization/
-│       └── qdq_export.toml                 # [공통] Q-DQ mode와 mask-zero 보존 설정
+│       ├── qdq_export.toml                 # [공통] Q-DQ mode와 mask-zero 보존 설정
+│       └── packed_export.toml              # 네가지 모델 · 두 layout의 256개 export 설정
 │
 ├── tests/
 │   ├── test_checkpoints.py                 # range download·hash·checkpoint 검증
@@ -79,19 +80,20 @@ QuantPrune-X/
 │   ├── test_global_magnitude.py            # [대기] global threshold/metadata 테스트 자리
 │   ├── test_layerwise_magnitude.py         # [대기] layer별 ratio/metadata 테스트 자리
 │   ├── test_pruning_masks.py               # mask artifact 재적용 검증
-│   ├── test_quantized_export.py            # Q-DQ mask-zero와 checkpoint 왕복 검증
+│   ├── test_quantized_export.py            # Q-DQ·dense·sparse 저장·복원, mask·패킹 경계 검증
+│   ├── model_helpers.py                    # 공용 TinyNet
 │   ├── test_experiment_pipeline.py         # 검증된 results.json 생성 확인
 │   ├── test_result_schema.py               # 필수 결과 열 누락 거부 확인
 │   └── test_integration.py                 # 전체 처리 순서와 실제 모듈의 end-to-end smoke
 │
 ├── artifacts/                              # 실행 산출물; Git 제외
 │   ├── checkpoints/
-│   │   ├── fp32/                           # FP32 원본 체크포인트
-│   │   │   ├── resnet18/qcb.pth            # ResNet-18 공개 체크포인트
-│   │   │   └── alexnet/qcb.pth             # AlexNet 공개 체크포인트
-│   │   ├── qdq_int8/                       # INT8 Q-DQ export
-│   │   ├── qdq_int4/                       # INT4 Q-DQ export
-│   │   └── integer_quantized/              # 향후 실제 정수 양자화
+│   │   └── fp32/                           # FP32 원본 체크포인트
+│   │       ├── resnet18/qcb.pth            # ResNet-18 공개 체크포인트
+│   │       └── alexnet/qcb.pth             # AlexNet 공개 체크포인트
+│   ├── exports/{run_id}/                   # 전체 export 요청 한 번
+│   │   ├── models/{combination_id}__{layout}.pt  # packed INT4·INT8 체크포인트
+│   │   └── summary.csv                     # 성공·실패, 상대 경로, 실제 파일 크기
 │   └── runs/{experiment}/{run_id}/
 │       ├── results.json                    # 공통 결과 스키마를 따르는 실행 결과
 │       ├── metrics.csv                     # 결과의 scalar 필드 한 행
@@ -103,6 +105,7 @@ QuantPrune-X/
 │   ├── provenance.md                       # 이식 코드와 체크포인트 출처
 │   ├── verification.md                     # 원본 재현 비교 결과
 │   ├── common_interfaces.md                # 팀 공통 함수·반환 규약
+│   ├── quantized_checkpoint_export.md       # export·복원 사용법, 형식과 크기 실측
 │   ├── implementation_status.md            # 현재 작업/검증/구현 대기 상태
 │   └── project_structure.md                # 이 문서
 ├── README.md                               # 사용자용 설치·실행 요약
@@ -116,7 +119,7 @@ QuantPrune-X/
 
 `artifacts/`는 Git에서 제외된다. pruning mask는 이름 충돌과 실행 결과 분리를 피하기 위해 별도의 `artifacts/masks/`에 모으지 않고, 각 실행 폴더의 `masks.pt`로 저장한다. `save_masks()`는 파일을 저장할 때 실행 폴더를 자동으로 만든다.
 
-FP32 공개 체크포인트는 `fp32/{model}/qcb.pth`로 정리했으며 `qdq_int8/`, `qdq_int4/`, `integer_quantized/`는 export 대상 디렉터리다.
+FP32 공개 체크포인트는 `fp32/{model}/qcb.pth`로 정리했으며, 정수 export는 `artifacts/exports/{run_id}/`에 저장한다.
 
 ## 기존 독립 베이스라인 코드 분석
 
@@ -151,8 +154,8 @@ FP32 공개 체크포인트는 `fp32/{model}/qcb.pth`로 정리했으며 `qdq_in
 - `pruning/masks.py`: mask를 CPU bool tensor로 정규화하고 versioned artifact로 저장·복원한다. 적용 시 이름과 shape를 검사하고 제거 위치를 정확한 0으로 만든다.
 - `pruning/sparsity.py`: model parameter의 total/nonzero/actual sparsity와 파라미터별 상세값을 계산한다. buffer는 제외한다.
 - `quantization/contracts.py`: 허용 bit 폭을 4/8로 제한하고 양자화 공통 반환 구조를 정의한다.
-- `quantization/materialize_qdq.py`: 2차원 이상 weight에 per-tensor symmetric Q-DQ를 적용한다. P→Q에서는 전달된 mask를 전후로 적용해 제거 weight가 반올림 때문에 살아나지 않게 한다. 현재 activation materialization은 포함하지 않는다.
-- `quantization/checkpoint_export.py`: Python model 객체 대신 `state_dict`, 포맷 버전, quantization metadata를 저장한다.
+- `quantization/materialize_qdq.py`: 2차원 이상 weight에 per-tensor symmetric Q-DQ를 적용하고 텐서별 scale을 metadata에 보존한다. P→Q에서는 전달된 mask를 전후로 적용해 제거 weight가 반올림 때문에 살아나지 않게 한다. 현재 activation materialization은 포함하지 않는다.
+- `quantization/checkpoint_export.py`: Q-DQ(v1) 또는 정수 패킹(v2)과 metadata를 저장한다. v2는 파일 단위 dense·bitmap sparse를 지원하며 로드 시 FP32로 가중치를 복원한다.
 - `experiments/transforms.py`: 처리 순서의 저장값을 정확히 `FP32`, `Q`, `P`, `Q→P`, `P→Q`로 고정한다.
 - `experiments/result_schema.py`: run/model/checkpoint/양자화/프루닝/CA/ASR/효율/산출물 경로 필드를 강제하고 범위를 검사한다.
 - `experiments/efficiency.py`: parameter 수, nonzero 수와 현재 dense tensor byte 기준 모델 크기를 계산한다. 프루닝 mask만 적용했다고 압축 크기나 latency 감소로 해석하면 안 된다.

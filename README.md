@@ -32,11 +32,13 @@ uv run --locked python src/run_matrix.py configs/experiments/baseline.toml
 PYTHONPATH=src uv run --locked python -B -m unittest discover -s tests -v
 ```
 
-모델별 JSON·CSV와 통합 CSV를 저장합니다. INT8·INT4는 fake quantization 평가이며 실제 정수 연산의 속도나 모델 크기 절감을 측정하지 않습니다.
+모델별 JSON·CSV와 통합 CSV를 저장합니다. INT8·INT4 평가는 fake quantization이며 정수 연산 추론 속도를 측정하지 않습니다.
 
 ## 구성과 검증
 
 - [베이스라인 구성](docs/baseline.md): 환경, 체크포인트 준비, 옵션, 지표와 출력
+- [실험 파이프라인](docs/experiment_pipeline.md): 양자화·프루닝 처리 순서와 평가
+- [체크포인트 저장·복원](docs/quantized_checkpoint_export.md): INT4·INT8 저장·복원과 크기 실측
 - [검증 결과](docs/verification.md): CPU·CUDA 전체 평가 및 원본 비교
 - [코드·가중치 출처](docs/provenance.md): 원본 SHA, 파일 대응, 변경과 라이선스
 

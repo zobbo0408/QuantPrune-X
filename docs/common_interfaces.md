@@ -12,7 +12,7 @@
 - `experiments/result_schema.py`: 모든 실험 결과가 같은 필수 열과 값 범위를 갖는지 검사한다.
 - `experiments/efficiency.py`: parameter 수, nonzero 수, dense tensor 기준 모델 크기를 계산한다.
 - `experiments/pipeline.py`: 검증된 한 실행 결과를 `results.json`으로 저장한다.
-- `export_quantized_checkpoints.py`: 양자화 체크포인트 일괄 생성용 CLI 골격이다.
+- `export_quantized_checkpoints.py`: 양자화 체크포인트를 일괄 생성한다.
 - `run_experiments.py`: 전체 실험 matrix 실행용 CLI 골격이다.
 
 ## 책임 경계
@@ -28,6 +28,12 @@
 ## 결과 행
 
 필수 열은 `src/experiments/result_schema.py`의 `REQUIRED_RESULT_FIELDS`가 기준입니다. 변환 순서는 `FP32`, `Q`, `P`, `Q→P`, `P→Q`만 허용합니다. ASR은 `asr_all`과 `asr_non_target`을 모두 기록합니다.
+
+## 체크포인트 저장·복원
+
+`quantization.checkpoint_export`의 `save_quantized_checkpoint(path, model, metadata, layout=...)`로 저장합니다.
+`layout` 생략 시 Q-DQ(v1), `Layout.DENSE`·`Layout.SPARSE` 지정 시 정수 패킹(v2)으로 저장합니다.
+`load_quantized_checkpoint(path)`는 payload를 반환하며, v2의 `state_dict`에는 FP32로 복원한 가중치가 들어 있습니다.
 
 ## 충돌 방지
 
