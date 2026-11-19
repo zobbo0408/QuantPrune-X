@@ -1,0 +1,29 @@
+# ResNet-18 fine pruning-ratio sweep (5% steps) for trajectory and defense-condition analysis.
+[experiment]
+name = "resnet18-ratio-sweep"
+seed = 0
+output = "artifacts/runs/resnet18-ratio-sweep"
+
+[matrix]
+models = ["resnet18"]
+orders = ["FP32", "Q", "P", "Q→P", "P→Q"]
+bit_widths = [8, 4]
+pruning_methods = ["global_magnitude", "layerwise_magnitude"]
+ratios = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50,
+          0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
+
+[evaluation]
+device = "cuda"
+batch_size = 128
+workers = 0
+target_class = 0
+normalize = true
+activation_quantization = true
+
+[efficiency]
+latency_batch_size = 1
+latency_warmup = 2
+latency_iterations = 5
+
+[pipeline]
+pruning_backend = "common"
